@@ -145,18 +145,61 @@ body {
   padding: 16px;
   overflow-y: auto;
   height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cycle-list-header {
+  margin-bottom: 16px;
 }
 
 .cycle-list h3 {
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   color: #333;
   font-size: 1.2rem;
 }
 
+.search-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: #2B7CE9;
+}
+
+.sort-select {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background-color: white;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.sort-select:focus {
+  border-color: #2B7CE9;
+}
+
 .cycle-list-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
 }
 
 .cycle-item {
@@ -196,9 +239,21 @@ body {
 .cycle-path {
   color: #666;
   font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.cycle-file {
+  color: #999;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.no-results {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+  font-style: italic;
 }
 
 .canvas-section {
