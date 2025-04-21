@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Network } from 'vis-network';
 import { parseESLintOutput, DependencyCycle } from './utils/parser';
 import { SyntaxHighlighter } from './components/SyntaxHighlighter';
 import GraphVisualizer from './components/GraphVisualizer';
