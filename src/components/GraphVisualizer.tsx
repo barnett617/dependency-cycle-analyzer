@@ -5,14 +5,16 @@ import { DependencyCycle } from '../utils/parser';
 
 interface GraphVisualizerProps {
   cycles: DependencyCycle[];
+  selectedCycle: DependencyCycle | null;
   onCycleSelect: (cycle: DependencyCycle) => void;
 }
 
-const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect }) => {
+const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle, onCycleSelect }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
+  const nodesRef = useRef<DataSet<any>>(new DataSet());
+  const edgesRef = useRef<DataSet<any>>(new DataSet());
   const [error, setError] = useState<string | null>(null);
-  const [selectedCycle, setSelectedCycle] = useState<DependencyCycle | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -20,10 +22,12 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
       return;
     }
 
-    console.log('Initializing network with cycles:', cycles.length);
-    
-    const nodes = new DataSet<any>();
-    const edges = new DataSet<any>();
+    const nodes = nodesRef.current;
+    const edges = edgesRef.current;
+
+    // Clear existing data
+    nodes.clear();
+    edges.clear();
 
     // Create nodes and edges for all cycles
     cycles.forEach((cycle, cycleIndex) => {
@@ -39,7 +43,7 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
               border: '#2B7CE9',
               background: '#97C2FC',
             },
-            opacity: 0.8,
+            opacity: 0.3,
           });
         }
 
@@ -53,15 +57,13 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
             arrows: 'to',
             color: {
               color: '#2B7CE9',
-              opacity: 0.5,
+              opacity: 0.2,
             },
             width: 2,
           });
         }
       });
     });
-
-    console.log('Created nodes:', nodes.length, 'edges:', edges.length);
 
     const options = {
       nodes: {
@@ -84,10 +86,9 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
           },
           hover: {
             border: '#2B7CE9',
-            background: '#D2E5FF',
+            background: '#D2E3FF',
           },
         },
-        opacity: 0.8,
       },
       edges: {
         width: 2,
@@ -95,7 +96,6 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
           color: '#2B7CE9',
           highlight: '#2B7CE9',
           hover: '#2B7CE9',
-          opacity: 0.5,
         },
         smooth: {
           enabled: true,
@@ -139,24 +139,15 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
           sortMethod: 'directed',
         },
       },
-      configure: {
-        enabled: false,
-      },
-      autoResize: true,
-      height: '100%',
-      width: '100%',
     };
 
     try {
-      // Clean up any existing network
       if (networkRef.current) {
         networkRef.current.destroy();
       }
 
-      // Create new network
       const network = new Network(containerRef.current, { nodes, edges }, options);
       networkRef.current = network;
-      console.log('Network created successfully');
 
       // Fit the network to the viewport
       setTimeout(() => {
@@ -174,68 +165,7 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
           const cycleIndex = parseInt(nodeId.split('-')[0]);
           const cycle = cycles[cycleIndex];
           if (cycle) {
-            setSelectedCycle(cycle);
             onCycleSelect(cycle);
-            
-            // Update node and edge styles based on selection
-            const allNodes = nodes.get();
-            const allEdges = edges.get();
-            
-            // Reset all nodes and edges to default style
-            allNodes.forEach((node: any) => {
-              nodes.update({
-                ...node,
-                color: {
-                  border: '#2B7CE9',
-                  background: '#97C2FC',
-                },
-                opacity: 0.3,
-              });
-            });
-            
-            allEdges.forEach((edge: any) => {
-              edges.update({
-                ...edge,
-                color: {
-                  color: '#2B7CE9',
-                  opacity: 0.2,
-                },
-              });
-            });
-            
-            // Highlight selected cycle
-            const selectedNodes = new Set(cycle.cyclePath.map(node => `${cycleIndex}-${node}`));
-            const selectedEdges = new Set();
-            
-            // Find edges that are part of the cycle
-            allEdges.forEach((edge: any) => {
-              if (selectedNodes.has(edge.from) && selectedNodes.has(edge.to)) {
-                selectedEdges.add(edge.id);
-              }
-            });
-            
-            // Update selected nodes and edges
-            selectedNodes.forEach(nodeId => {
-              nodes.update({
-                id: nodeId,
-                color: {
-                  border: '#FF6B6B',
-                  background: '#FFE3E3',
-                },
-                opacity: 1,
-              });
-            });
-            
-            selectedEdges.forEach(edgeId => {
-              edges.update({
-                id: edgeId,
-                color: {
-                  color: '#FF6B6B',
-                  opacity: 1,
-                },
-                width: 3,
-              });
-            });
           }
         }
       };
@@ -252,75 +182,78 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, onCycleSelect
     }
   }, [cycles, onCycleSelect]);
 
-  const handleReset = () => {
-    setSelectedCycle(null);
-    if (networkRef.current) {
-      // Recreate the network with default styles
-      const container = containerRef.current;
-      if (container) {
-        container.innerHTML = '';
-        networkRef.current = null;
-        // Trigger a re-render by updating the cycles prop
-        onCycleSelect(cycles[0]);
-      }
+  // Update node and edge styles when selectedCycle changes
+  useEffect(() => {
+    if (!selectedCycle) return;
+
+    const nodes = nodesRef.current;
+    const edges = edgesRef.current;
+
+    // Reset all nodes and edges to default style
+    nodes.forEach((node: any) => {
+      nodes.update({
+        ...node,
+        color: {
+          border: '#2B7CE9',
+          background: '#97C2FC',
+        },
+        opacity: 0.3,
+      });
+    });
+
+    edges.forEach((edge: any) => {
+      edges.update({
+        ...edge,
+        color: {
+          color: '#2B7CE9',
+          opacity: 0.2,
+        },
+      });
+    });
+
+    // Highlight selected cycle
+    const cycleIndex = cycles.indexOf(selectedCycle);
+    if (cycleIndex !== -1) {
+      const selectedNodes = new Set(selectedCycle.cyclePath.map(node => `${cycleIndex}-${node}`));
+      const selectedEdges = new Set();
+
+      // Find edges that are part of the cycle
+      edges.forEach((edge: any) => {
+        if (selectedNodes.has(edge.from) && selectedNodes.has(edge.to)) {
+          selectedEdges.add(edge.id);
+        }
+      });
+
+      // Update selected nodes and edges
+      selectedNodes.forEach(nodeId => {
+        nodes.update({
+          id: nodeId,
+          color: {
+            border: '#FF6B6B',
+            background: '#FFE3E3',
+          },
+          opacity: 1,
+        });
+      });
+
+      selectedEdges.forEach(edgeId => {
+        edges.update({
+          id: edgeId,
+          color: {
+            color: '#FF6B6B',
+            opacity: 1,
+          },
+          width: 3,
+        });
+      });
     }
-  };
+  }, [selectedCycle, cycles]);
 
   return (
-    <div className="flex h-full" style={{ height: 'calc(100vh - 2rem)' }}>
-      <div className="w-1/4 p-4 overflow-y-auto border-r bg-white">
-        <h2 className="text-lg font-semibold mb-4">Dependency Cycles</h2>
-        <div className="space-y-2">
-          {cycles.map((cycle, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded cursor-pointer ${
-                selectedCycle === cycle
-                  ? 'bg-red-100 border-red-300'
-                  : 'bg-gray-50 hover:bg-gray-100'
-              }`}
-              onClick={() => {
-                const nodeId = `${index}-${cycle.cyclePath[0]}`;
-                if (networkRef.current) {
-                  networkRef.current.selectNodes([nodeId]);
-                }
-              }}
-            >
-              <div className="font-medium text-sm">
-                {cycle.cyclePath.join(' → ')}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {cycle.file}:{cycle.line}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex-1 relative bg-white" style={{ height: 'calc(100vh - 2rem)' }}>
-        <div 
-          ref={containerRef} 
-          id="network-container"
-          style={{ 
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            border: '1px solid #e5e7eb',
-            backgroundColor: 'white'
-          }}
-        />
-        {selectedCycle && (
-          <button
-            onClick={handleReset}
-            className="absolute top-4 right-4 px-3 py-1 bg-white border rounded shadow-sm hover:bg-gray-50 z-10"
-          >
-            Reset View
-          </button>
-        )}
-      </div>
+    <div className="graph-container" ref={containerRef}>
+      {error && <div className="error-message">{error}</div>}
     </div>
   );
 };
 
-export { GraphVisualizer }; 
+export default GraphVisualizer; 

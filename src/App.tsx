@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Network } from 'vis-network';
 import { parseESLintOutput, DependencyCycle } from './utils/parser';
 import { SyntaxHighlighter } from './components/SyntaxHighlighter';
-import { GraphVisualizer } from './components/GraphVisualizer';
+import GraphVisualizer from './components/GraphVisualizer';
 import { CycleInfo } from './components/CycleInfo';
+import CycleList from './components/CycleList';
 import './App.css';
 
 const STORAGE_KEY = 'dependency-cycle-analyzer-input';
@@ -147,9 +148,18 @@ function App() {
                 onCycleSelect={setSelectedCycle}
               />
             </div>
-            <div className="details-container">
-              <CycleInfo cycle={selectedCycle} />
+            <div className="cycle-list">
+              <CycleList
+                cycles={cycles}
+                selectedCycle={selectedCycle}
+                onCycleSelect={setSelectedCycle}
+              />
             </div>
+            {selectedCycle && (
+              <div className="details-container">
+                <CycleInfo cycle={selectedCycle} />
+              </div>
+            )}
           </div>
         ) : (
           <div className="demo-section">
