@@ -1,4 +1,4 @@
-import { Plugin } from 'vite';
+import { Plugin, createServer } from 'vite';
 import { Compiler, WebpackPluginInstance } from 'webpack';
 import { DependencyCycle } from './types';
 import fs from 'fs-extra';
@@ -86,7 +86,7 @@ export class DependencyCycleAnalyzerPlugin {
 
       // Start server and open browser if requested
       if (this.options.open) {
-        const server = require('vite').createServer({
+        const server = await createServer({
           root: this.options.outputDir,
           server: {
             port: this.options.port,

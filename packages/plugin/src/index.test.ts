@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DependencyCycleAnalyzerPlugin } from './index';
+import fs from 'fs-extra';
+import open from 'open';
+import { createServer } from 'vite';
 
 // Mock dependencies
 vi.mock('fs-extra');
 vi.mock('open');
 vi.mock('vite', () => ({
-  createServer: vi.fn().mockReturnValue({
+  createServer: vi.fn().mockImplementation(async () => ({
     listen: vi.fn().mockResolvedValue(undefined),
-  }),
+  })),
 }));
 
 describe('DependencyCycleAnalyzerPlugin', () => {
@@ -22,6 +25,11 @@ describe('DependencyCycleAnalyzerPlugin', () => {
     it('sets default options', () => {
       const defaultPlugin = new DependencyCycleAnalyzerPlugin();
       expect(defaultPlugin).toBeDefined();
+      expect(defaultPlugin['options']).toEqual({
+        outputDir: 'dependency-cycle-report',
+        open: true,
+        port: 3000,
+      });
     });
 
     it('accepts custom options', () => {
@@ -30,7 +38,11 @@ describe('DependencyCycleAnalyzerPlugin', () => {
         open: false,
         port: 4000,
       });
-      expect(customPlugin).toBeDefined();
+      expect(customPlugin['options']).toEqual({
+        outputDir: 'custom-dir',
+        open: false,
+        port: 4000,
+      });
     });
   });
 
@@ -65,6 +77,63 @@ import { z } from './x';
       plugin.addCyclesFromESLint('');
       expect(plugin['cycles']).toHaveLength(0);
     });
+
+    it('handles output without valid cycles', () => {
+      plugin.addCyclesFromESLint('Some random text\nwithout cycles');
+      expect(plugin['cycles']).toHaveLength(0);
+    });
+  });
+
+  describe('generateReport', () => {
+    it('generates report and opens browser when open is true', async () => {
+      // Mock fs-extra methods
+      vi.mocked(fs.ensureDir).mockResolvedValue(undefined);
+      vi.mocked(fs.copy).mockResolvedValue(undefined);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+      vi.mocked(fs.readFile).mockResolvedValue('<html><head></head></html>');
+
+      // Add some test cycles
+      plugin.addCyclesFromESLint(`
+Dependency cycle detected at /path/to/file.ts:1:1
+import { foo } from './bar';
+import { bar } from './baz';
+`);
+
+      // Call generateReport through the Vite plugin
+      const vitePlugin = plugin.vite();
+      if (vitePlugin.buildEnd) {
+        await vitePlugin.buildEnd();
+      }
+
+      // Verify the report generation
+      expect(fs.ensureDir).toHaveBeenCalledWith('dependency-cycle-report');
+      expect(fs.copy).toHaveBeenCalled();
+      expect(fs.writeFile).toHaveBeenCalledTimes(2);
+      expect(createServer).toHaveBeenCalledWith({
+        root: 'dependency-cycle-report',
+        server: {
+          port: 3000,
+        },
+      });
+      expect(open).toHaveBeenCalledWith('http://localhost:3000');
+    });
+
+    it('handles errors during report generation', async () => {
+      // Mock fs-extra to throw an error
+      vi.mocked(fs.ensureDir).mockRejectedValue(new Error('Test error'));
+
+      // Spy on console.error
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Call generateReport directly
+      await plugin['generateReport']();
+
+      // Verify error handling
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to generate dependency cycle report:',
+        expect.any(Error)
+      );
+    });
   });
 
   describe('vite plugin', () => {
@@ -72,7 +141,7 @@ import { z } from './x';
       const vitePlugin = plugin.vite();
       expect(vitePlugin).toHaveProperty('name', 'dependency-cycle-analyzer');
       expect(vitePlugin).toHaveProperty('enforce', 'post');
-      expect(vitePlugin).toHaveProperty('buildEnd');
+      expect(vitePlugin.buildEnd).toBeDefined();
     });
   });
 
@@ -80,7 +149,7 @@ import { z } from './x';
     it('returns a valid Webpack plugin', () => {
       const webpackPlugin = plugin.webpack();
       expect(webpackPlugin).toHaveProperty('name', 'DependencyCycleAnalyzerPlugin');
-      expect(webpackPlugin).toHaveProperty('apply');
+      expect(webpackPlugin.apply).toBeDefined();
     });
   });
 });
