@@ -1,54 +1,49 @@
 # Publishing Guide
 
-This guide explains how to publish the Dependency Cycle Analyzer plugin to npm.
+This guide explains how to publish the Dependency Cycle Analyzer packages to npm.
 
 ## Prerequisites
 
 1. An npm account
 2. Node.js and pnpm installed
 3. Access to the repository
+4. NPM_TOKEN secret configured in GitHub repository
 
 ## Publishing Steps
 
 ### 1. Prepare the Package
 
-1. Update the version in `packages/plugin/package.json`:
+1. Update the version in both package.json files:
 ```bash
+# Update plugin version
 cd packages/plugin
+pnpm version [major|minor|patch]
+
+# Update web version
+cd ../web
 pnpm version [major|minor|patch]
 ```
 
 2. Update the changelog in `CHANGELOG.md` with the new version and changes.
 
-3. Build the package:
+3. Build the packages:
 ```bash
 pnpm run build
 ```
 
-### 2. Configure npm
+### 2. Create a Release
 
-1. Login to npm:
+1. Create and push a new tag:
 ```bash
-npm login
+git tag v1.0.0  # Replace with your version
+git push origin v1.0.0
 ```
 
-2. Verify your npm account:
-```bash
-npm whoami
-```
-
-### 3. Publish the Package
-
-1. Publish the plugin:
-```bash
-cd packages/plugin
-npm publish --access public
-```
-
-2. Verify the publication:
-```bash
-npm view @dependency-cycle-analyzer/plugin
-```
+2. The CI workflow will automatically:
+   - Run tests
+   - Build packages
+   - Publish to npm
+   - Create a GitHub release
 
 ## Publishing Workflow
 
@@ -82,45 +77,25 @@ pnpm version prerelease --preid beta
 pnpm version prerelease --preid alpha
 ```
 
-### 3. Tagging
-
-Use npm tags to manage different versions:
-```bash
-# Publish as latest
-npm publish --tag latest
-
-# Publish as beta
-npm publish --tag beta
-```
-
 ## CI/CD Integration
 
-Add publishing to your CI workflow:
+The project uses GitHub Actions for automated publishing. The workflow is defined in `.github/workflows/ci.yml` and includes:
 
-```yaml
-# .github/workflows/publish.yml
-name: Publish
+1. **Test Job**
+   - Runs on Node.js 18.x and 20.x
+   - Installs dependencies with pnpm
+   - Runs linting and tests
+   - Uploads coverage reports
 
-on:
-  push:
-    tags:
-      - 'v*'
+2. **Build Job**
+   - Builds all packages
+   - Uploads build artifacts
 
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-      - run: pnpm install
-      - run: pnpm run build
-      - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-```
+3. **Release Job**
+   - Triggers on tag pushes (v*)
+   - Downloads build artifacts
+   - Publishes packages to npm
+   - Creates GitHub release
 
 ## Best Practices
 
@@ -128,9 +103,10 @@ jobs:
    - Use semantic versioning
    - Update CHANGELOG.md for each release
    - Tag releases in git
+   - Keep versions in sync between packages
 
 2. **Quality Assurance**
-   - Run tests before publishing
+   - Run tests before creating a release
    - Verify the build works
    - Check documentation is up to date
 
@@ -149,7 +125,7 @@ jobs:
 ### Common Issues
 
 1. **Authentication Errors**
-   - Verify npm login
+   - Verify NPM_TOKEN secret is configured
    - Check npm token permissions
    - Ensure correct registry URL
 
@@ -161,11 +137,11 @@ jobs:
 3. **Publish Failures**
    - Check package.json format
    - Verify build process
-   - Review npm logs
+   - Review GitHub Actions logs
 
 ### Support
 
 For publishing issues:
-1. Check npm documentation
-2. Review npm logs
-3. Contact npm support if needed 
+1. Check GitHub Actions logs
+2. Review npm documentation
+3. Contact repository maintainers if needed 
