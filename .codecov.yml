@@ -1,0 +1,24 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 75%
+        threshold: 5%
+  ignore:
+    - "**/node_modules/**"
+    - "**/dist/**"
+    - "**/coverage/**"
+    - "**/__tests__/**"
+    - "**/__mocks__/**"
+    - "**/public/**"
+
+codecov:
+  require_ci_to_pass: true
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  branches: null
+
+fixes:
+  - "coverage/coverage-final.json" 
