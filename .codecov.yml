@@ -21,4 +21,8 @@ comment:
   branches: null
 
 fixes:
-  - "coverage/coverage-final.json" 
+  - "coverage/coverage-final.json"
+
+paths:
+  - "packages/web/src/**"
+  - "packages/plugin/src/**" 

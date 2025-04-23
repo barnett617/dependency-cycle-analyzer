@@ -40,6 +40,13 @@ jobs:
       run: |
         pnpm --filter @dependency-cycle-analyzer/web test:coverage
         pnpm --filter @dependency-cycle-analyzer/plugin test:coverage
+        mkdir -p coverage
+        cp packages/web/coverage/coverage-final.json coverage/web-coverage.json
+        cp packages/plugin/coverage/coverage-final.json coverage/plugin-coverage.json
+        # Combine coverage reports
+        echo '{"type":"coverage-final.json","data":{"coverage":{}}}' > coverage/coverage-final.json
+        jq -s '.[0].data.coverage * .[1].data.coverage * .[2].data.coverage' coverage/web-coverage.json coverage/plugin-coverage.json coverage/coverage-final.json > coverage/combined-coverage.json
+        mv coverage/combined-coverage.json coverage/coverage-final.json
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
