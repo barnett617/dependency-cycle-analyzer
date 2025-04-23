@@ -5,7 +5,12 @@ import open from 'open';
 import { createServer } from 'vite';
 
 // Mock dependencies
-vi.mock('fs-extra');
+vi.mock('fs-extra', () => ({
+  ensureDir: vi.fn(),
+  copy: vi.fn(),
+  writeFile: vi.fn(),
+  readFile: vi.fn(),
+}));
 vi.mock('open');
 vi.mock('vite', () => ({
   createServer: vi.fn().mockImplementation(async () => ({
@@ -87,10 +92,10 @@ import { z } from './x';
   describe('generateReport', () => {
     it('generates report and opens browser when open is true', async () => {
       // Mock fs-extra methods
-      vi.mocked(fs.ensureDir).mockResolvedValue(undefined);
-      vi.mocked(fs.copy).mockResolvedValue(undefined);
-      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('<html><head></head></html>');
+      vi.mocked(fs.ensureDir).mockResolvedValue();
+      vi.mocked(fs.copy).mockResolvedValue();
+      vi.mocked(fs.writeFile).mockResolvedValue();
+      vi.mocked(fs.readFile).mockResolvedValue('<html><head></head></html>' as any);
 
       // Add some test cycles
       plugin.addCyclesFromESLint(`
@@ -101,8 +106,9 @@ import { bar } from './baz';
 
       // Call generateReport through the Vite plugin
       const vitePlugin = plugin.vite();
-      if (vitePlugin.buildEnd) {
-        await vitePlugin.buildEnd();
+      const buildEnd = vitePlugin.buildEnd as (() => Promise<void>) | undefined;
+      if (buildEnd) {
+        await buildEnd();
       }
 
       // Verify the report generation
@@ -125,8 +131,12 @@ import { bar } from './baz';
       // Spy on console.error
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      // Call generateReport directly
-      await plugin['generateReport']();
+      // Call generateReport through the Vite plugin
+      const vitePlugin = plugin.vite();
+      const buildEnd = vitePlugin.buildEnd as (() => Promise<void>) | undefined;
+      if (buildEnd) {
+        await buildEnd();
+      }
 
       // Verify error handling
       expect(consoleSpy).toHaveBeenCalledWith(

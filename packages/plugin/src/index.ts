@@ -40,12 +40,11 @@ export class DependencyCycleAnalyzerPlugin {
 
   // Vite plugin implementation
   vite(): Plugin {
-    const generateReport = this.generateReport.bind(this);
     return {
       name: 'dependency-cycle-analyzer',
       enforce: 'post',
-      async buildEnd() {
-        await generateReport();
+      buildEnd: async () => {
+        await this.generateReport();
       },
     };
   }
