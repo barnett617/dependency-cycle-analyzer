@@ -95,7 +95,8 @@ import { z } from './x';
       vi.mocked(fs.ensureDir).mockResolvedValue();
       vi.mocked(fs.copy).mockResolvedValue();
       vi.mocked(fs.writeFile).mockResolvedValue();
-      vi.mocked(fs.readFile).mockResolvedValue('<html><head></head></html>' as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (vi.mocked(fs.readFile) as any).mockResolvedValue(Buffer.from('<html><head></head></html>'));
 
       // Add some test cycles
       plugin.addCyclesFromESLint(`
