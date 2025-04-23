@@ -16,47 +16,65 @@ fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 const webCoverage = JSON.parse(fs.readFileSync(webCoveragePath, 'utf8'));
 const pluginCoverage = JSON.parse(fs.readFileSync(pluginCoveragePath, 'utf8'));
 
-// Create the combined coverage object
+// Create a new coverage object
 const combinedCoverage = {};
 
-// Helper function to merge coverage data
-function mergeCoverageData(target, source) {
-  for (const [filePath, coverage] of Object.entries(source)) {
-    if (!target[filePath]) {
-      target[filePath] = coverage;
-    } else {
-      // Merge statementMap
-      target[filePath].statementMap = {
-        ...target[filePath].statementMap,
-        ...coverage.statementMap,
+// Helper function to process coverage data
+function processCoverageData(coverage) {
+  for (const [filePath, data] of Object.entries(coverage)) {
+    if (!combinedCoverage[filePath]) {
+      combinedCoverage[filePath] = {
+        path: data.path,
+        statementMap: {},
+        fnMap: {},
+        branchMap: {},
+        s: [],
+        f: [],
+        b: [],
+        all: true,
       };
-
-      // Merge branchMap
-      target[filePath].branchMap = {
-        ...target[filePath].branchMap,
-        ...coverage.branchMap,
-      };
-
-      // Merge fnMap
-      target[filePath].fnMap = {
-        ...target[filePath].fnMap,
-        ...coverage.fnMap,
-      };
-
-      // Merge s, b, and f arrays
-      target[filePath].s = [...(target[filePath].s || []), ...(coverage.s || [])];
-      target[filePath].b = [...(target[filePath].b || []), ...(coverage.b || [])];
-      target[filePath].f = [...(target[filePath].f || []), ...(coverage.f || [])];
-
-      // Update all flag
-      target[filePath].all = target[filePath].all && coverage.all;
     }
+
+    // Process statementMap
+    if (data.statementMap) {
+      Object.entries(data.statementMap).forEach(([key, value]) => {
+        combinedCoverage[filePath].statementMap[key] = value;
+      });
+    }
+
+    // Process fnMap
+    if (data.fnMap) {
+      Object.entries(data.fnMap).forEach(([key, value]) => {
+        combinedCoverage[filePath].fnMap[key] = value;
+      });
+    }
+
+    // Process branchMap
+    if (data.branchMap) {
+      Object.entries(data.branchMap).forEach(([key, value]) => {
+        combinedCoverage[filePath].branchMap[key] = value;
+      });
+    }
+
+    // Process coverage arrays
+    if (Array.isArray(data.s)) {
+      combinedCoverage[filePath].s = [...combinedCoverage[filePath].s, ...data.s];
+    }
+    if (Array.isArray(data.f)) {
+      combinedCoverage[filePath].f = [...combinedCoverage[filePath].f, ...data.f];
+    }
+    if (Array.isArray(data.b)) {
+      combinedCoverage[filePath].b = [...combinedCoverage[filePath].b, ...data.b];
+    }
+
+    // Update all flag
+    combinedCoverage[filePath].all = combinedCoverage[filePath].all && (data.all || false);
   }
 }
 
-// Merge coverage data
-mergeCoverageData(combinedCoverage, webCoverage);
-mergeCoverageData(combinedCoverage, pluginCoverage);
+// Process both coverage reports
+processCoverageData(webCoverage);
+processCoverageData(pluginCoverage);
 
 // Write the combined coverage report
 fs.writeFileSync(outputPath, JSON.stringify(combinedCoverage, null, 2));
