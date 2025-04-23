@@ -10,53 +10,47 @@ on:
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        run_install: false
-    
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
-    
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-    
-    - name: Run linting
-      run: pnpm run lint
-    
-    - name: Run tests with coverage
-      run: |
-        pnpm --filter @dependency-cycle-analyzer/web test:coverage
-        pnpm --filter @dependency-cycle-analyzer/plugin test:coverage
-        mkdir -p coverage
-        cp packages/web/coverage/coverage-final.json coverage/web-coverage.json
-        cp packages/plugin/coverage/coverage-final.json coverage/plugin-coverage.json
-        # Combine coverage reports
-        echo '{"type":"coverage-final.json","data":{"coverage":{}}}' > coverage/coverage-final.json
-        jq -s '.[0].data.coverage * .[1].data.coverage * .[2].data.coverage' coverage/web-coverage.json coverage/plugin-coverage.json coverage/coverage-final.json > coverage/combined-coverage.json
-        mv coverage/combined-coverage.json coverage/coverage-final.json
-    
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/coverage-final.json
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
-        verbose: true
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.4
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run linting
+        run: pnpm lint
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+      - name: Combine coverage reports
+        run: node scripts/combine-coverage.js
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/coverage-final.json
+          fail_ci_if_error: true
 
   build:
     needs: test
