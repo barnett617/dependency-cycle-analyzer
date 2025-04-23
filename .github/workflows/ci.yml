@@ -36,8 +36,10 @@ jobs:
     - name: Run linting
       run: pnpm run lint
     
-    - name: Run tests
-      run: pnpm run test
+    - name: Run tests with coverage
+      run: |
+        pnpm --filter @dependency-cycle-analyzer/web test:coverage
+        pnpm --filter @dependency-cycle-analyzer/plugin test:coverage
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
@@ -47,6 +49,7 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: true
+        verbose: true
 
   build:
     needs: test
