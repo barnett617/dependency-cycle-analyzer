@@ -133,7 +133,7 @@ function App() {
         </div>
 
         {cycles.length > 0 ? (
-          <div className="visualization-section">
+          <div className="visualization-section" data-testid="visualization-section">
             <div className="graph-container">
               <GraphVisualizer
                 cycles={cycles}

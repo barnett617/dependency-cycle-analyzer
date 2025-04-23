@@ -7,7 +7,13 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./vitest.setup.ts'],
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost/',
+        resources: 'usable',
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -18,13 +24,13 @@ export default defineConfig({
         '**/*.test.{ts,tsx}',
         '**/*.config.{ts,js}',
         '**/snapshots/',
-        '**/*.snap'
-      ]
-    }
+        '**/*.snap',
+      ],
+    },
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  }
-}); 
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+});
