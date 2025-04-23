@@ -9,7 +9,7 @@ vi.mock('fs-extra', () => ({
   ensureDir: vi.fn(),
   copy: vi.fn(),
   writeFile: vi.fn(),
-  readFile: vi.fn(),
+  readFile: vi.fn().mockResolvedValue('<html><head></head></html>'),
 }));
 vi.mock('open');
 vi.mock('vite', () => ({
