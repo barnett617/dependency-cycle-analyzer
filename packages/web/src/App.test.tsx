@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
-import { parseESLintOutput } from './utils/parser';
+import { parseESLintOutput, DependencyCycle } from './utils/parser';
 
 // Mock the parser module
 vi.mock('./utils/parser', () => ({
@@ -21,7 +21,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
-    (parseESLintOutput as any).mockReturnValue([]);
+    (parseESLintOutput as Mock).mockReturnValue([]);
     console.error = vi.fn();
   });
 
@@ -129,18 +129,16 @@ describe('App', () => {
   });
 
   it('updates cycles when input changes', () => {
-    const mockCycles = [
+    const mockCycles: DependencyCycle[] = [
       {
-        id: '1',
-        nodes: ['a', 'b'],
-        edges: [
-          ['a', 'b'],
-          ['b', 'a'],
-        ],
-        cyclePath: ['a', 'b', 'a'],
+        file: 'test.js',
+        line: 1,
+        column: 1,
+        cyclePath: ['a', 'b'],
+        codeContext: 'test context',
       },
     ];
-    (parseESLintOutput as any).mockReturnValue(mockCycles);
+    (parseESLintOutput as Mock).mockReturnValue(mockCycles);
 
     render(<App />);
     const textarea = screen.getByRole('textbox');
