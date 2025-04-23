@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Network } from 'vis-network';
+import { Network, Node as VisNode, Edge as VisEdge } from 'vis-network';
 import { DataSet } from 'vis-data';
 import { DependencyCycle } from '../utils/parser';
 
@@ -9,11 +9,15 @@ interface GraphVisualizerProps {
   onCycleSelect: (cycle: DependencyCycle) => void;
 }
 
-const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle, onCycleSelect }) => {
+const GraphVisualizer: React.FC<GraphVisualizerProps> = ({
+  cycles,
+  selectedCycle,
+  onCycleSelect,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
-  const nodesRef = useRef<DataSet<any>>(new DataSet());
-  const edgesRef = useRef<DataSet<any>>(new DataSet());
+  const nodesRef = useRef<DataSet<VisNode>>(new DataSet());
+  const edgesRef = useRef<DataSet<VisEdge>>(new DataSet());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,7 +42,7 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
             id: nodeId,
             label: node,
             title: node,
-            group: cycleIndex,
+            group: cycleIndex.toString(),
             color: {
               border: '#2B7CE9',
               background: '#97C2FC',
@@ -154,12 +158,12 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
         network.fit({
           animation: {
             duration: 1000,
-            easingFunction: 'easeInOutQuad'
-          }
+            easingFunction: 'easeInOutQuad',
+          },
         });
       }, 100);
 
-      const handleNodeClick = (params: any) => {
+      const handleNodeClick = (params: { nodes: string[] }) => {
         if (params.nodes.length > 0 && networkRef.current) {
           const nodeId = params.nodes[0];
           const cycleIndex = parseInt(nodeId.split('-')[0]);
@@ -190,7 +194,7 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
     const edges = edgesRef.current;
 
     // Reset all nodes and edges to default style
-    nodes.forEach((node: any) => {
+    nodes.forEach((node: VisNode) => {
       nodes.update({
         ...node,
         color: {
@@ -201,7 +205,7 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
       });
     });
 
-    edges.forEach((edge: any) => {
+    edges.forEach((edge: VisEdge) => {
       edges.update({
         ...edge,
         color: {
@@ -215,12 +219,20 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
     const cycleIndex = cycles.indexOf(selectedCycle);
     if (cycleIndex !== -1) {
       const selectedNodes = new Set(selectedCycle.cyclePath.map(node => `${cycleIndex}-${node}`));
-      const selectedEdges = new Set();
+      const selectedEdges = new Set<string>();
 
       // Find edges that are part of the cycle
-      edges.forEach((edge: any) => {
-        if (selectedNodes.has(edge.from) && selectedNodes.has(edge.to)) {
-          selectedEdges.add(edge.id);
+      edges.forEach((edge: VisEdge) => {
+        if (
+          edge.from &&
+          edge.to &&
+          selectedNodes.has(edge.from.toString()) &&
+          selectedNodes.has(edge.to.toString())
+        ) {
+          const edgeId = edge.id;
+          if (typeof edgeId === 'string' || typeof edgeId === 'number') {
+            selectedEdges.add(edgeId.toString());
+          }
         }
       });
 
@@ -236,7 +248,7 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
         });
       });
 
-      selectedEdges.forEach(edgeId => {
+      selectedEdges.forEach((edgeId: string) => {
         edges.update({
           id: edgeId,
           color: {
@@ -256,4 +268,4 @@ const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ cycles, selectedCycle
   );
 };
 
-export default GraphVisualizer; 
+export default GraphVisualizer;

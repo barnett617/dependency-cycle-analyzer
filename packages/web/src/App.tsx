@@ -53,7 +53,7 @@ function App() {
           setStorageError('Input is too large to save. Your changes will be lost on refresh.');
           return;
         }
-        
+
         setShowSizeWarning(compressedData.length > WARNING_SIZE);
         localStorage.setItem(STORAGE_KEY, compressedData);
         setStorageError(null);
@@ -101,7 +101,7 @@ function App() {
         setSelectedCycle(parsedCycles[0]);
       }
     }
-  }, []);
+  }, [input]);
 
   return (
     <div className="app">
@@ -121,15 +121,9 @@ function App() {
             )}
           </div>
           {showSizeWarning && (
-            <div className="warning-message">
-              Warning: Large input may affect performance
-            </div>
+            <div className="warning-message">Warning: Large input may affect performance</div>
           )}
-          {storageError && (
-            <div className="error-message">
-              {storageError}
-            </div>
-          )}
+          {storageError && <div className="error-message">{storageError}</div>}
           <textarea
             value={input}
             onChange={handleInputChange}
@@ -181,4 +175,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

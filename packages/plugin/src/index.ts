@@ -1,8 +1,8 @@
 import { Plugin } from 'vite';
-import { Compiler } from 'webpack';
+import { Compiler, WebpackPluginInstance } from 'webpack';
 import { DependencyCycle } from './types';
 import fs from 'fs-extra';
-import { open } from 'open';
+import open from 'open';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,13 +12,13 @@ export interface PluginOptions {
    * @default 'dependency-cycle-report'
    */
   outputDir?: string;
-  
+
   /**
    * Whether to open the report in browser automatically
    * @default true
    */
   open?: boolean;
-  
+
   /**
    * Port to serve the report on
    * @default 3000
@@ -34,30 +34,31 @@ export class DependencyCycleAnalyzerPlugin {
     this.options = {
       outputDir: options.outputDir || 'dependency-cycle-report',
       open: options.open ?? true,
-      port: options.port || 3000
+      port: options.port || 3000,
     };
   }
 
   // Vite plugin implementation
   vite(): Plugin {
+    const generateReport = this.generateReport.bind(this);
     return {
       name: 'dependency-cycle-analyzer',
       enforce: 'post',
       async buildEnd() {
-        await this.generateReport();
-      }
+        await generateReport();
+      },
     };
   }
 
   // Webpack plugin implementation
-  webpack(): any {
+  webpack(): WebpackPluginInstance {
     return {
       name: 'DependencyCycleAnalyzerPlugin',
       apply: (compiler: Compiler) => {
         compiler.hooks.done.tap('DependencyCycleAnalyzerPlugin', async () => {
           await this.generateReport();
         });
-      }
+      },
     };
   }
 
@@ -67,18 +68,12 @@ export class DependencyCycleAnalyzerPlugin {
       await fs.ensureDir(this.options.outputDir);
 
       // Copy web app files to output directory
-      const webAppDir = path.join(
-        path.dirname(fileURLToPath(import.meta.url)),
-        '../../web/dist'
-      );
+      const webAppDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
       await fs.copy(webAppDir, this.options.outputDir);
 
       // Generate cycles data file
       const cyclesData = JSON.stringify(this.cycles, null, 2);
-      await fs.writeFile(
-        path.join(this.options.outputDir, 'cycles.json'),
-        cyclesData
-      );
+      await fs.writeFile(path.join(this.options.outputDir, 'cycles.json'), cyclesData);
 
       // Update index.html to include cycles data
       const indexPath = path.join(this.options.outputDir, 'index.html');
@@ -94,8 +89,8 @@ export class DependencyCycleAnalyzerPlugin {
         const server = require('vite').createServer({
           root: this.options.outputDir,
           server: {
-            port: this.options.port
-          }
+            port: this.options.port,
+          },
         });
         await server.listen();
         await open(`http://localhost:${this.options.port}`);
@@ -123,7 +118,7 @@ export class DependencyCycleAnalyzerPlugin {
             line: parseInt(lineNum),
             column: parseInt(column),
             cyclePath: [],
-            codeContext: ''
+            codeContext: '',
           };
         }
       } else if (currentCycle && line.trim()) {
@@ -147,4 +142,4 @@ export class DependencyCycleAnalyzerPlugin {
   }
 }
 
-export default DependencyCycleAnalyzerPlugin; 
+export default DependencyCycleAnalyzerPlugin;

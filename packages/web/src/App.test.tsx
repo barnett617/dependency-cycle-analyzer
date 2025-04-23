@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
@@ -9,15 +9,15 @@ describe('App', () => {
     expect(titleElement).toBeInTheDocument();
   });
 
-  it('renders the file upload section', () => {
+  it('renders the input section', () => {
     render(<App />);
-    const uploadElement = screen.getByText(/Upload your project files/i);
-    expect(uploadElement).toBeInTheDocument();
+    const inputElement = screen.getByText(/Paste ESLint Output/i);
+    expect(inputElement).toBeInTheDocument();
   });
 
-  it('renders the visualization section', () => {
+  it('renders the example section when no input', () => {
     render(<App />);
-    const visualizationElement = screen.getByText(/Dependency Graph/i);
-    expect(visualizationElement).toBeInTheDocument();
+    const exampleElement = screen.getByText(/Example ESLint Output/i);
+    expect(exampleElement).toBeInTheDocument();
   });
-}); 
+});
