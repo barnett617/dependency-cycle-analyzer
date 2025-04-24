@@ -5,12 +5,15 @@ import open from 'open';
 import { createServer } from 'vite';
 
 // Mock dependencies
-vi.mock('fs-extra', () => ({
-  ensureDir: vi.fn(),
-  copy: vi.fn(),
-  writeFile: vi.fn(),
-  readFile: vi.fn().mockResolvedValue('<html><head></head></html>'),
-}));
+vi.mock('fs-extra', () => {
+  const mockFs = {
+    ensureDir: vi.fn().mockResolvedValue(undefined),
+    copy: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockImplementation(() => '<html><head></head></html>'),
+  };
+  return { default: mockFs };
+});
 vi.mock('open');
 vi.mock('vite', () => ({
   createServer: vi.fn().mockImplementation(async () => ({
@@ -91,13 +94,6 @@ import { z } from './x';
 
   describe('generateReport', () => {
     it('generates report and opens browser when open is true', async () => {
-      // Mock fs-extra methods
-      vi.mocked(fs.ensureDir).mockResolvedValue();
-      vi.mocked(fs.copy).mockResolvedValue();
-      vi.mocked(fs.writeFile).mockResolvedValue();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (vi.mocked(fs.readFile) as any).mockResolvedValue(Buffer.from('<html><head></head></html>'));
-
       // Add some test cycles
       plugin.addCyclesFromESLint(`
 Dependency cycle detected at /path/to/file.ts:1:1
