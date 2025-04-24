@@ -4,19 +4,13 @@
   "outputDirectory": "packages/web/dist",
   "framework": "vite",
   "installCommand": "pnpm install",
-  "builds": [
-    {
-      "src": "packages/web/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
